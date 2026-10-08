@@ -6,6 +6,7 @@
   "author": {
     "name": "skillwire contributors"
   },
+  "license": "MIT",
   "keywords": [
     "skills",
     "hooks",

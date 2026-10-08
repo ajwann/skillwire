@@ -263,3 +263,7 @@ Skills changed by skillwire are ordinary files and stay as they are:
   `SKILL.template.md` from the skill folder if you no longer want them.
 - **A/B skills** keep whichever description was active last. To restore the original, copy the
   oldest `~/.claude/skillwire/backups/<skill>.*.SKILL.md` back **before** you delete that folder.
+
+## License
+
+[MIT](LICENSE)
