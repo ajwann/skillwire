@@ -53,3 +53,19 @@ def plugin_root() -> Path:
     if env:
         return Path(env)
     return Path(__file__).resolve().parents[2]
+
+
+# Variables a child process needs to run normally. Nothing else is passed, so
+# generators and sandboxed dispatchers never inherit tokens from the user's shell.
+CHILD_ENV_VARS = ("PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LC_ALL", "LC_CTYPE",
+                  "TMPDIR", "TZ", "SYSTEMROOT")
+
+
+def child_env(**extra: str) -> dict[str, str]:
+    env = {}
+    for name in CHILD_ENV_VARS:
+        val = os.environ.get(name)
+        if val is not None:
+            env[name] = val
+    env.update({k: str(v) for k, v in extra.items()})
+    return env

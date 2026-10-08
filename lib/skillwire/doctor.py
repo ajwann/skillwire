@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -78,9 +77,6 @@ def check_config(rep: Report, project: Path) -> dict:
     from .modules import chaos
     if cfg["chaos"].get("enabled") and not chaos.active(cfg):
         rep.warn("chaos.enabled is true but SKILLWIRE_CHAOS!=1 in this shell, so chaos is inactive here")
-    if cfg["router"].get("llm_classify"):
-        rep.warn("router.llm_classify is on: the classifier only runs inside hooks when the plugin's "
-                 "classifier_api_key option is set (/plugin → skillwire → configure); otherwise regex only")
     return cfg
 
 
@@ -142,7 +138,8 @@ def check_claude_validate(rep: Report, root: Path) -> None:
         rep.warn("`claude` not on PATH; skipped `claude plugin validate`")
         return
     try:
-        proc = subprocess.run([claude, "plugin", "validate", str(root)], capture_output=True, text=True, timeout=60)
+        proc = subprocess.run([claude, "plugin", "validate", str(root)], capture_output=True, text=True, timeout=60,
+                              env=paths.child_env())
     except (OSError, subprocess.TimeoutExpired) as exc:
         rep.warn(f"`claude plugin validate` could not run: {exc}")
         return
@@ -154,8 +151,8 @@ def check_dispatchers(rep: Report, root: Path, project: Path, hook_events: dict)
     rep.section("Dispatchers (fake events, sandboxed data dir, JIT dry-run)")
     sandbox = Path(tempfile.mkdtemp(prefix="skillwire-doctor-"))
     try:
-        env = {**os.environ, "SKILLWIRE_HOME": str(sandbox), "SKILLWIRE_DRY_RUN": "1",
-               "CLAUDE_PROJECT_DIR": str(project), "CLAUDE_PLUGIN_ROOT": str(root)}
+        env = paths.child_env(SKILLWIRE_HOME=str(sandbox), SKILLWIRE_DRY_RUN="1",
+                              CLAUDE_PROJECT_DIR=str(project), CLAUDE_PLUGIN_ROOT=str(root))
         for ev, payload in fake_events(project).items():
             script = root / "scripts" / EXPECTED[ev]["script"]
             limit = 60

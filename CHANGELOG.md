@@ -4,20 +4,36 @@ All notable changes to skillwire are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-08
+
+Changes to clear the plugin directory's policy holds.
+
+### Removed
+- **The router's Haiku classifier** (`router.llm_classify`, `llm_model`, `llm_timeout`)
+  and the `classifier_api_key` plugin option. Routing is keyword/regex only, and
+  skillwire makes no network requests. The only way to pass the key that satisfies the
+  directory is a hook argument, and Claude Code refuses to run a hook whose option is
+  unset, which would have broken routing for everyone without a key. `skillwire doctor`
+  flags leftover `llm_*` keys.
+
+### Changed
+- JIT generators and the processes `skillwire doctor` starts get a minimal
+  environment (PATH, HOME, user, shell, locale, TMPDIR, TZ) instead of a copy of
+  yours, so tokens in your shell never reach them.
+- The listing icon is picked up from its default location, and `plugin.json` no
+  longer names it.
+
 ## [0.1.1] - 2026-10-08
 
 Changes for the Anthropic plugin directory checks.
 
 ### Changed
-- The router's Haiku classifier now takes its API key from a new sensitive
-  `classifier_api_key` plugin option (secure storage, exported to hooks as
-  `CLAUDE_PLUGIN_OPTION_CLASSIFIER_API_KEY`). skillwire no longer reads API keys from
-  the shell environment. **If you used `llm_classify` with a key from your shell, set the
-  option instead.**
-- `plugin.json` now sets `author`, `homepage`, `repository` and `icon`.
+- The router's Haiku classifier took its API key from a sensitive plugin option
+  instead of the shell environment.
+- `plugin.json` now sets `author`, `homepage` and `repository`.
 
 ### Added
-- Listing icon at `.claude-plugin/icon.png`.
+- A listing icon for the plugin directory.
 - README section "What skillwire runs, sends and fetches".
 
 ## [0.1.0] - 2026-10-08

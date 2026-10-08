@@ -116,3 +116,14 @@ def test_example_generator_with_file_url(env, tmp_path):
     assert "- **census-2020**: US census data" in text and "- **weather**" in text
     assert "(2 datasets above)" in text
     assert text.startswith("---\nname: jit-datasets\n")
+
+
+def test_generator_gets_minimal_environment(env, monkeypatch):
+    monkeypatch.setenv("SECRET_TOKEN", "do-not-leak")
+    env.write_project({"jit": {"enabled": True}})
+    d = make_jit_skill(env, "{python} gen.py", template="---\nname: live\ndescription: d\n---\n{{ output }}\n")
+    write_gen(d, 'import json, os; print(json.dumps({"output": " ".join(sorted(os.environ))}))')
+    env.fire("session_start")
+    seen = (d / "SKILL.md").read_text().split("---\n")[-1].split()
+    assert "SKILLWIRE_SKILL_DIR" in seen and "PATH" in seen
+    assert "SECRET_TOKEN" not in seen

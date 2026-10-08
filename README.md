@@ -6,7 +6,7 @@ renders skills just in time, and measures all of it.
 
 | Module | Hook | Default | What it does |
 |---|---|---|---|
-| **router** | UserPromptSubmit | on | Matches the prompt against keyword/regex rules (with an optional Haiku classifier) and tells Claude which skills are *required* and which are *suggested* |
+| **router** | UserPromptSubmit | on | Matches the prompt against keyword/regex rules and tells Claude which skills are *required* and which are *suggested* |
 | **telemetry** | UserPromptSubmit, PreToolUse, PostToolUse | on | Logs every routed, loaded, denied and redirected skill to SQLite. Powers `report`, `suggest-chains` and `ab-report` |
 | **chaining** | PostToolUse | on | After skill X loads, points Claude at its configured follow-ups |
 | **hijacker** | PreToolUse | off | Denies skill X and tells Claude to load Y instead, with loop guards |
@@ -64,7 +64,7 @@ alias skillwire="python3 /path/to/skillwire/bin/skillwire"
 | `skillwire ab-report` | Trigger rate per variant, with sample sizes and a significance verdict |
 | `skillwire doctor [--no-claude]` | Validate config and hook registration, run `claude plugin validate`, and run every dispatcher on fake events in a sandbox |
 
-All commands accept `--project DIR` (default: `$CLAUDE_PROJECT_DIR` or the cwd).
+All commands accept `--project DIR` (default: the project directory Claude Code reports, or the current directory).
 
 ## Configuration
 
@@ -86,9 +86,6 @@ and the defaults. `skillwire doctor` reports the problem.
 {
   "router": {
     "enabled": true,
-    "llm_classify": false,
-    "llm_model": "claude-haiku-5-5",
-    "llm_timeout": 2.0,
     "rules": [
       {
         "skill": "security-review",
@@ -139,16 +136,6 @@ Every module takes `enabled: true|false`.
 | Key | Default | |
 |---|---|---|
 | `rules[]` | `[]` | `{skill, keywords[], regex[], intent_examples[], priority}`. `priority` is `required` or `suggested` (default) |
-| `llm_classify` | `false` | Also ask Haiku which rules apply. Only used when the plugin's `classifier_api_key` option is set (see below) |
-| `llm_model` | `claude-haiku-5-5` | |
-| `llm_timeout` | `2.0` | Seconds. On timeout, refusal or a bad response, only the keyword/regex matches are used |
-
-To use the classifier, set `llm_classify: true` and give the plugin an Anthropic API key
-through its `classifier_api_key` option. Claude Code asks for it when you enable the plugin, or
-you can set it later in `/plugin` → skillwire → configure (from a shell:
-`claude plugin install skillwire@skillwire --config classifier_api_key=…`). It is a **sensitive**
-option, so Claude Code keeps it in secure storage rather than in `settings.json`. skillwire never
-reads API keys from your shell environment.
 
 Keywords match case-insensitively on word boundaries ("test" does not match "attest"). Regexes use
 Python `re.search` with IGNORECASE. Claude gets context such as *"Required skills (project
@@ -182,8 +169,11 @@ A skill opts in with a sidecar `skillwire.json` next to its `SKILL.md`:
 { "template": "SKILL.template.md", "generator": "{python} generate.py --url https://example.com/catalog.json" }
 ```
 
-`{python}` expands to the interpreter running skillwire. The generator runs in the skill folder,
-and its stdout should be a JSON object (anything else becomes `{{ output }}`). Template
+`{python}` expands to the interpreter running skillwire. The generator runs in the skill folder
+with a minimal environment (PATH, HOME, user, shell, locale, TMPDIR, TZ, plus
+`SKILLWIRE_SKILL_DIR`). It does not inherit the rest of your environment, so tokens in your shell
+never reach it. A generator that needs a credential has to load it itself.
+Its stdout should be a JSON object (anything else becomes `{{ output }}`). Template
 placeholders look like `{{ key }}` or `{{ key.sub }}`: lists render as bullets, dicts as JSON.
 If anything fails (non-zero exit, timeout, an unknown placeholder, or output without
 frontmatter), **SKILL.md is left as it was** and a one-line notice appears at session start.
@@ -230,15 +220,11 @@ code 2. Denials are made only through the documented `permissionDecision: "deny"
 
 ## What skillwire runs, sends and fetches
 
-Everything here is opt-in except local telemetry:
+skillwire itself makes no network requests. Everything below except local telemetry is opt-in:
 
 - **Local files only by default.** The default modules (router, telemetry, chaining) read
   `skillwire.json` and your skills' `SKILL.md` files, and write to `~/.claude/skillwire/`. Nothing
   leaves your machine.
-- **Network: the router classifier (off by default).** With `router.llm_classify: true` *and* a
-  `classifier_api_key` set, each prompt (first 4,000 characters) and the names, keywords and
-  intent examples of your router rules are sent to `https://api.anthropic.com/v1/messages`
-  (Claude Haiku), using that key. No other data is sent and no other host is contacted.
 - **Commands: JIT generators (off by default).** With `jit.enabled: true`, skillwire runs the
   `generator` command named in each opted-in skill's `skillwire.json`, in that skill's folder, at
   session start. Those commands are yours, so whatever they fetch is up to you. The bundled
@@ -249,8 +235,8 @@ Everything here is opt-in except local telemetry:
   `skillwire init` writes to. Each is backed up or written atomically as described above.
 - **Commands it shells out to:** `skillwire doctor` runs `claude plugin validate` and the plugin's
   own dispatcher scripts. The hooks run only `python3` and the scripts in this plugin.
-- **Never:** it doesn't read credentials or environment secrets, change Claude Code permission
-  settings, or send telemetry anywhere.
+- **Never:** it doesn't read credentials, pass your environment to the commands it starts, change
+  Claude Code permission settings, or send telemetry anywhere.
 
 ## Data
 

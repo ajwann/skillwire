@@ -19,13 +19,7 @@ from .errors import log_error
 MODULES = ("router", "telemetry", "chaining", "hijacker", "allowlist", "chaos", "jit", "ab")
 
 DEFAULTS: dict[str, Any] = {
-    "router": {
-        "enabled": True,
-        "rules": [],
-        "llm_classify": False,
-        "llm_model": "claude-haiku-5-5",
-        "llm_timeout": 2.0,
-    },
+    "router": {"enabled": True, "rules": []},
     "telemetry": {"enabled": True, "store_prompts": False},
     "chaining": {"enabled": True, "chains": {}, "skip_if_loaded": True},
     "hijacker": {"enabled": False, "map": {}},
@@ -131,6 +125,9 @@ def validate(cfg: dict) -> list[str]:
         if key not in MODULES and key not in DEFAULTS and not key.startswith("$"):
             problems.append(f"unknown top-level key '{key}'")
 
+    for gone in ("llm_classify", "llm_model", "llm_timeout"):
+        if gone in cfg["router"]:
+            problems.append(f"router.{gone} was removed in 0.1.2 (the Haiku classifier is gone); delete it")
     rules = cfg["router"].get("rules", [])
     if not isinstance(rules, list):
         problems.append("router.rules must be a list")

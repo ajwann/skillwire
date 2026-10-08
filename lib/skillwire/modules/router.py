@@ -3,25 +3,16 @@
 Rule shape: {skill, keywords[], regex[], intent_examples[], priority: required|suggested}
 
 Keywords match case-insensitively on word boundaries, and regexes use
-re.search with IGNORECASE. When router.llm_classify is true and
-an API key is set in the plugin's
-`classifier_api_key` option (asked for at install, stored by Claude Code as a
-sensitive value, never read from your shell environment), a Haiku call adds matches. It has a hard timeout
-(router.llm_timeout, default 2s), and on any failure only the regex/keyword
-matches are used.
+re.search with IGNORECASE. Routing is local: nothing leaves the machine.
+intent_examples aren't matched; `skillwire init` fills them in as notes for
+the people who tune the rules.
 """
 from __future__ import annotations
 
-import json
-import os
 import re
-import urllib.request
 
 from ..errors import log_error
 
-API_URL = "https://api.anthropic.com/v1/messages"
-# Claude Code exports the sensitive userConfig option `classifier_api_key` to hooks under this name.
-API_KEY_ENV = "CLAUDE_PLUGIN_OPTION_CLASSIFIER_API_KEY"
 
 
 def _keyword_hit(keyword: str, text: str) -> bool:
@@ -53,68 +44,9 @@ def match_rules(prompt: str, rules: list) -> list[dict]:
     return hits
 
 
-def llm_classify(prompt: str, rules: list, model: str, timeout: float) -> list[str] | None:
-    """Ask Haiku which rule skills apply. Returns None on any failure (caller falls back)."""
-    key = os.environ.get(API_KEY_ENV)
-    if not key or not rules:
-        return None
-    catalog = []
-    for r in rules:
-        if isinstance(r, dict) and r.get("skill"):
-            examples = "; ".join(str(e) for e in (r.get("intent_examples") or [])[:5])
-            catalog.append(f"- {r['skill']}: {examples or ', '.join(r.get('keywords') or [])}")
-    names = [r["skill"] for r in rules if isinstance(r, dict) and r.get("skill")]
-    body = {
-        "model": model,
-        "max_tokens": 256,
-        "thinking": {"type": "disabled"},
-        "output_config": {
-            "effort": "low",
-            "format": {
-                "type": "json_schema",
-                "schema": {
-                    "type": "object",
-                    "properties": {"skills": {"type": "array", "items": {"type": "string", "enum": names}}},
-                    "required": ["skills"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        "messages": [{
-            "role": "user",
-            "content": (
-                "Classify which of these skills are relevant to the user's request. "
-                "Return only skills whose intent clearly matches; an empty list is fine.\n\n"
-                "Skills:\n" + "\n".join(catalog) + "\n\nUser request:\n<request>\n" + prompt[:4000] + "\n</request>"
-            ),
-        }],
-    }
-    req = urllib.request.Request(
-        API_URL, data=json.dumps(body).encode(), method="POST",
-        headers={"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            data = json.loads(resp.read().decode())
-        if data.get("stop_reason") == "refusal":
-            return None
-        text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
-        picked = json.loads(text).get("skills", [])
-        return [s for s in picked if s in names]
-    except Exception as exc:  # timeout, HTTP error, bad JSON: fall back to regex
-        log_error("router/llm", message=f"classifier unavailable, using regex only: {exc!r}")
-        return None
-
-
 def route(prompt: str, cfg: dict) -> tuple[list[str], list[str]]:
-    rcfg = cfg.get("router", {})
-    rules = [r for r in (rcfg.get("rules") or []) if isinstance(r, dict) and r.get("skill")]
+    rules = cfg.get("router", {}).get("rules") or []
     hits = {r["skill"]: r for r in match_rules(prompt, rules)}
-    if rcfg.get("llm_classify") is True:
-        picked = llm_classify(prompt, rules, rcfg.get("llm_model", "claude-haiku-5-5"),
-                              float(rcfg.get("llm_timeout", 2.0)))
-        for name in picked or []:
-            hits.setdefault(name, next(r for r in rules if r["skill"] == name))
     required = [s for s, r in hits.items() if r.get("priority") == "required"]
     suggested = [s for s, r in hits.items() if r.get("priority") != "required"]
     return required, suggested

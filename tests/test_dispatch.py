@@ -1,11 +1,11 @@
 import json
-import os
 import subprocess
 import sys
 
 import pytest
 
 from conftest import ROOT, load_fixture
+from skillwire import paths
 
 SCRIPTS = {
     "SessionStart": "on_session_start.py",
@@ -25,7 +25,7 @@ def run_script(event_name, stdin, env):
     proc = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / SCRIPTS[event_name])],
         input=stdin, capture_output=True, text=True, timeout=30,
-        env={**os.environ, "HOME": str(env.home), "CLAUDE_PROJECT_DIR": str(env.project)},
+        env=paths.child_env(HOME=str(env.home), CLAUDE_PROJECT_DIR=str(env.project)),
     )
     return proc
 

@@ -2,7 +2,7 @@
 
 A skill opts in with a sidecar `skillwire.json` next to its SKILL.md:
 
-    {"template": "SKILL.template.md", "generator": "{python} generate.py --url https://…"}
+    {"template": "SKILL.template.md", "generator": "{python} generate.py --url <catalog-url>"}
 
 On session start the generator runs in the skill directory (jit.timeout,
 default 30s). Its stdout should be a JSON object, and non-JSON output is
@@ -69,7 +69,7 @@ def _command(generator) -> list[str]:
 
 
 def run_generator(skill_dir: Path, generator, timeout: float) -> dict:
-    env = {**os.environ, "SKILLWIRE_SKILL_DIR": str(skill_dir)}
+    env = paths.child_env(SKILLWIRE_SKILL_DIR=str(skill_dir))
     try:
         proc = subprocess.run(_command(generator), cwd=str(skill_dir), capture_output=True, text=True,
                               timeout=timeout, env=env, stdin=subprocess.DEVNULL)
