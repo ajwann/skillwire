@@ -1,7 +1,7 @@
 {
   "name": "skillwire",
   "displayName": "skillwire",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Intercept and reshape how Claude uses skills: routing, chaining, redirects, allow/deny lists, JIT-rendered skills, telemetry, description A/B tests and chaos mode.",
   "author": {
     "name": "Adam Wanninger",

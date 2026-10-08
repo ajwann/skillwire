@@ -4,6 +4,12 @@ All notable changes to skillwire are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026-10-08
+
+### Changed
+- The minimal environment for child processes reads each variable by its literal name,
+  so the directory scanner can see that no credential is read.
+
 ## [0.1.2] - 2026-10-08
 
 Changes to clear the plugin directory's policy holds.
