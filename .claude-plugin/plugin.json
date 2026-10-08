@@ -1,0 +1,9 @@
+{
+  "name": "skillwire",
+  "displayName": "skillwire",
+  "version": "0.1.0",
+  "description": "Intercept and reshape how Claude uses skills: routing, chaining, redirects, allow/deny lists, JIT-rendered skills, telemetry, description A/B tests and chaos mode.",
+  "author": {"name": "skillwire contributors"},
+  "license": "MIT",
+  "keywords": ["skills", "hooks", "telemetry", "routing"]
+}

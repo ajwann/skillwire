@@ -1,0 +1,1 @@
+{"session_id": "sess-fixture-1", "transcript_path": "/tmp/skillwire-fixture/transcript.jsonl", "cwd": "/tmp/skillwire-fixture", "prompt_id": "b85940e5-530d-4bcc-a528-6c9df02720dd", "permission_mode": "default", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "ls", "description": "List files"}, "tool_use_id": "toolu_fixture_bash_1"}

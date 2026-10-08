@@ -1,0 +1,12 @@
+{
+  "name": "skillwire",
+  "description": "Marketplace for the skillwire plugin",
+  "owner": {"name": "skillwire contributors"},
+  "plugins": [
+    {
+      "name": "skillwire",
+      "source": "./",
+      "description": "Intercept and reshape how Claude uses skills"
+    }
+  ]
+}
