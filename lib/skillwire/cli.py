@@ -46,6 +46,23 @@ def cmd_init(args) -> int:
     return 0
 
 
+def cmd_suggest_chains(args) -> int:
+    import json
+    from . import report, suggest
+    project = _project(args)
+    proposals, evidence = suggest.suggest(_cfg(project), args.min, args.window)
+    if not proposals:
+        print(f"No skill pairs co-occurred in at least {args.min} sessions ({args.window}). Nothing to propose.")
+        return 0
+    print(f"# Proposed chains (pairs seen in >= {args.min} sessions, {args.window})\n")
+    print(report.md_table(["after", "then", "sessions A→B", "sessions B→A"], [list(e) for e in evidence]))
+    print("Add to `chaining.chains` in skillwire.json if these look right (not applied automatically):\n")
+    print("```json")
+    print(json.dumps({"chaining": {"chains": proposals}}, indent=2))
+    print("```")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="skillwire", description="Intercept and reshape how Claude uses skills.")
     ap.add_argument("--version", action="version", version=f"skillwire {__version__}")
@@ -61,6 +78,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("window", nargs="?", default="7d", help="7d (default), 30d, 24h, 2w …")
     p.add_argument("--unused", action="store_true", help="only list skills that never loaded in the window")
     p.set_defaults(func=cmd_report)
+
+    p = sub.add_parser("suggest-chains", help="propose chain entries from co-occurring skills (prints only)")
+    p.add_argument("--min", type=int, default=3, help="minimum sessions a pair must co-occur in (default 3)")
+    p.add_argument("--window", default="30d", help="lookback window (default 30d)")
+    p.set_defaults(func=cmd_suggest_chains)
     return ap
 
 
