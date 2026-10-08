@@ -152,3 +152,24 @@ def discover(project: Path | None, cfg: dict | None = None) -> list[SkillInfo]:
             name = fm.get("name") or d.name
             found.setdefault(name, SkillInfo(name, d, scope, fm.get("description", ""), sidecar))
     return list(found.values())
+
+
+def replace_description(text: str, new_description: str) -> str:
+    """Rewrite only the single-line `description:` value in the frontmatter.
+
+    The value is written as a JSON string, which is valid YAML double-quoted
+    scalar syntax. Raises ValueError for a missing or multi-line description
+    rather than guessing at the YAML.
+    """
+    loc = description_line_index(text)
+    if loc is None:
+        raise ValueError("no description: line in frontmatter")
+    idx, single = loc
+    if not single:
+        raise ValueError("description spans multiple lines; make it a single line to use A/B variants")
+    lines = text.splitlines(keepends=True)
+    ending = "\n" if lines[idx].endswith("\n") else ""
+    if lines[idx].endswith("\r\n"):
+        ending = "\r\n"
+    lines[idx] = "description: " + json.dumps(new_description, ensure_ascii=False) + ending
+    return "".join(lines)

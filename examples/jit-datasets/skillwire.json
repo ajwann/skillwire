@@ -1,0 +1,5 @@
+{
+  "template": "SKILL.template.md",
+  "generator": "{python} generate.py --url https://huggingface.co/api/datasets?limit=15&sort=downloads",
+  "timeout": 30
+}
