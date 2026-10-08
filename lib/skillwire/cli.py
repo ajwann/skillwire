@@ -82,6 +82,13 @@ def cmd_ab_report(args) -> int:
     return 0
 
 
+def cmd_doctor(args) -> int:
+    from . import doctor
+    code, text = doctor.run(_project(args), run_claude=not args.no_claude)
+    print(text)
+    return code
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="skillwire", description="Intercept and reshape how Claude uses skills.")
     ap.add_argument("--version", action="version", version=f"skillwire {__version__}")
@@ -110,6 +117,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("ab-report", help="compare trigger rate per description variant")
     p.set_defaults(func=cmd_ab_report)
+
+    p = sub.add_parser("doctor", help="validate config, hook registration, and run each dispatcher")
+    p.add_argument("--no-claude", action="store_true", help="skip `claude plugin validate`")
+    p.set_defaults(func=cmd_doctor)
     return ap
 
 
