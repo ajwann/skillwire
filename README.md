@@ -37,11 +37,8 @@ claude plugin marketplace add ajwann/skillwire              # --scope project to
 claude plugin install skillwire@skillwire                   # -s project
 ```
 
-Start a new session (or run `/reload-plugins`), then check the install:
-
-```bash
-skillwire doctor        # inside Claude: ask it to run `skillwire doctor`
-```
+Start a new session (or run `/reload-plugins`), then check the install by asking Claude to run
+`skillwire doctor`. To run it from your own terminal, see [Running the CLI](#running-the-cli).
 
 Hooks run `python3` from your PATH.
 
@@ -64,7 +61,8 @@ alias skillwire="python3 /path/to/skillwire/bin/skillwire"
 | `skillwire ab-report` | Trigger rate per variant, with sample sizes and a significance verdict |
 | `skillwire doctor [--no-claude]` | Validate config and hook registration, run `claude plugin validate`, and run every dispatcher on fake events in a sandbox |
 
-All commands accept `--project DIR` (default: the project directory Claude Code reports, or the current directory).
+Every command takes `--project DIR`, placed before the command name (`skillwire --project ~/repo report 30d`).
+Without it, skillwire uses the project directory Claude Code reports, or the current directory.
 
 ## Configuration
 
@@ -135,7 +133,7 @@ Every module takes `enabled: true|false`.
 
 | Key | Default | |
 |---|---|---|
-| `rules[]` | `[]` | `{skill, keywords[], regex[], intent_examples[], priority}`. `priority` is `required` or `suggested` (default) |
+| `rules[]` | `[]` | `{skill, keywords[], regex[], intent_examples[], priority}`. `priority` is `required` or `suggested` (default). `intent_examples` are notes for whoever tunes the rules; matching uses only `keywords` and `regex` |
 
 Keywords match case-insensitively on word boundaries ("test" does not match "attest"). Regexes use
 Python `re.search` with IGNORECASE. Claude gets context such as *"Required skills (project
@@ -150,7 +148,8 @@ skills already loaded in the session are left out, so `a → b → a` chains sto
 
 **hijacker**: `map: {from_skill: to_skill}`. Chains resolve to their end (`a→b→c` sends `a`
 straight to `c`). A self-redirect, a cycle, or a redirect into a skill the allowlist blocks is
-**ignored**: the original call goes through, and the reason is logged and reported by `doctor`.
+**ignored**: the original call goes through and the reason is logged to `errors.log`. `doctor`
+also flags self-redirects and cycles in the config.
 
 **allowlist**: `rules[]` of `{paths[], allow[]?, block[]?}`. Path globs (`~` expands) match the
 cwd *or any ancestor*, with symlinks resolved. Skill patterns are globs that match either
@@ -169,12 +168,14 @@ A skill opts in with a sidecar `skillwire.json` next to its `SKILL.md`:
 { "template": "SKILL.template.md", "generator": "{python} generate.py --url https://example.com/catalog.json" }
 ```
 
-`{python}` expands to the interpreter running skillwire. The generator runs in the skill folder
+`generator` is a command string or an argument list, and `{python}` expands to the interpreter
+running skillwire. A sidecar can also set its own `timeout` in seconds. The generator runs in the skill folder
 with a minimal environment (PATH, HOME, user, shell, locale, TMPDIR, TZ, plus
 `SKILLWIRE_SKILL_DIR`). It does not inherit the rest of your environment, so tokens in your shell
 never reach it. A generator that needs a credential has to load it itself.
 Its stdout should be a JSON object (anything else becomes `{{ output }}`). Template
 placeholders look like `{{ key }}` or `{{ key.sub }}`: lists render as bullets, dicts as JSON.
+`{{ generated_at }}` (the render time) is always available.
 If anything fails (non-zero exit, timeout, an unknown placeholder, or output without
 frontmatter), **SKILL.md is left as it was** and a one-line notice appears at session start.
 Renders are skipped after `/compact`.
@@ -186,7 +187,7 @@ Renders are skipped after `/compact`.
 { "variants": ["Use when reviewing code for bugs.", "Use for code review requests: PRs, diffs, patches."] }
 ```
 
-`skillwire rotate` backs up `SKILL.md` to `~/.claude/skillwire/backups/`, rewrites **only** the
+`skillwire rotate` needs `ab.enabled: true` (`--dry-run` works either way). It backs up `SKILL.md` to `~/.claude/skillwire/backups/`, rewrites **only** the
 `description:` line (and refuses if the description spans several lines), and logs the switch. To
 run it on a schedule, use cron, e.g. weekly:
 
@@ -220,7 +221,7 @@ code 2. Denials are made only through the documented `permissionDecision: "deny"
 
 ## What skillwire runs, sends and fetches
 
-skillwire itself makes no network requests. Everything below except local telemetry is opt-in:
+skillwire itself makes no network requests. Here is everything it touches:
 
 - **Local files only by default.** The default modules (router, telemetry, chaining) read
   `skillwire.json` and your skills' `SKILL.md` files, and write to `~/.claude/skillwire/`. Nothing
@@ -233,10 +234,12 @@ skillwire itself makes no network requests. Everything below except local teleme
 - **Files edited outside `~/.claude/skillwire/`:** `SKILL.md` of JIT skills (on session start, when
   enabled) and of A/B skills (only when you run `skillwire rotate`), plus the config file
   `skillwire init` writes to. Each is backed up or written atomically as described above.
-- **Commands it shells out to:** `skillwire doctor` runs `claude plugin validate` and the plugin's
-  own dispatcher scripts. The hooks run only `python3` and the scripts in this plugin.
-- **Never:** it doesn't read credentials, pass your environment to the commands it starts, change
-  Claude Code permission settings, or send telemetry anywhere.
+- **Commands it shells out to:** the hooks run `python3` with this plugin's scripts and, when JIT is
+  enabled, the generators above. `skillwire doctor` also runs `claude plugin validate` and the
+  plugin's own dispatcher scripts.
+- **Never:** it doesn't read credentials, pass your full environment to the commands it starts
+  (they get only PATH, HOME, user, shell, locale, TMPDIR and TZ), change Claude Code permission
+  settings, or send telemetry anywhere.
 
 ## Data
 
