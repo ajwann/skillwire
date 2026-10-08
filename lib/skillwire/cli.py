@@ -63,6 +63,25 @@ def cmd_suggest_chains(args) -> int:
     return 0
 
 
+def cmd_rotate(args) -> int:
+    from . import rotator
+    project = _project(args)
+    cfg = _cfg(project)
+    if not cfg["ab"].get("enabled") and not args.dry_run:
+        print("A/B rotation is off. Set \"ab\": {\"enabled\": true} in skillwire.json (or use --dry-run).")
+        return 1
+    lines = rotator.rotate(project, cfg, args.skill, args.dry_run)
+    print("\n".join(lines) if lines else "No skills with A/B variants found.")
+    return 0
+
+
+def cmd_ab_report(args) -> int:
+    from . import rotator
+    project = _project(args)
+    print(rotator.ab_report(project, _cfg(project)))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="skillwire", description="Intercept and reshape how Claude uses skills.")
     ap.add_argument("--version", action="version", version=f"skillwire {__version__}")
@@ -83,6 +102,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--min", type=int, default=3, help="minimum sessions a pair must co-occur in (default 3)")
     p.add_argument("--window", default="30d", help="lookback window (default 30d)")
     p.set_defaults(func=cmd_suggest_chains)
+
+    p = sub.add_parser("rotate", help="switch A/B skills to their next description variant")
+    p.add_argument("--skill", help="only rotate this skill")
+    p.add_argument("--dry-run", action="store_true", help="show what would change")
+    p.set_defaults(func=cmd_rotate)
+
+    p = sub.add_parser("ab-report", help="compare trigger rate per description variant")
+    p.set_defaults(func=cmd_ab_report)
     return ap
 
 
