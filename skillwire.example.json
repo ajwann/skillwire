@@ -1,0 +1,65 @@
+{
+  "router": {
+    "enabled": true,
+    "llm_classify": false,
+    "llm_model": "claude-haiku-5-5",
+    "llm_timeout": 2.0,
+    "rules": [
+      {
+        "skill": "security-review",
+        "keywords": ["security", "vulnerability", "CVE", "auth bypass"],
+        "regex": ["\\b(xss|sqli|csrf)\\b"],
+        "intent_examples": ["is this endpoint safe?", "audit this PR for injection bugs"],
+        "priority": "required"
+      },
+      {
+        "skill": "flaky-test-triage",
+        "keywords": ["flaky", "intermittent"],
+        "regex": ["passes (locally|on retry)"],
+        "intent_examples": ["this test fails in CI but not on my machine"],
+        "priority": "suggested"
+      }
+    ]
+  },
+  "telemetry": {
+    "enabled": true,
+    "store_prompts": false
+  },
+  "chaining": {
+    "enabled": true,
+    "skip_if_loaded": true,
+    "chains": {
+      "security-review": ["secret-leak-response"],
+      "api-breaking-change-check": ["license-compliance"]
+    }
+  },
+  "hijacker": {
+    "enabled": true,
+    "map": {
+      "old-code-review": "code-review"
+    }
+  },
+  "allowlist": {
+    "enabled": true,
+    "rules": [
+      {"paths": ["~/work/*"], "block": ["personal-*", "pirate-voice"]},
+      {"paths": ["~/work/payments"], "allow": ["code-review", "security-*", "python-engineering-standards"]}
+    ]
+  },
+  "chaos": {
+    "enabled": true,
+    "rate": 0.2,
+    "seed": null,
+    "exempt": ["security-review"]
+  },
+  "jit": {
+    "enabled": true,
+    "timeout": 30,
+    "skill_dirs": []
+  },
+  "ab": {
+    "enabled": true,
+    "min_sessions": 30
+  },
+  "skill_dirs": ["~/shared-skills"]
+}

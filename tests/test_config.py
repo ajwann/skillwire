@@ -66,3 +66,14 @@ def test_validate_flags_problems(env):
     for needle in ("bad regex", "priority", "needs a 'skill'", "to itself", "cycle", "chaos.rate",
                    "needs 'allow' or 'block'", "unknown top-level key 'bogus'"):
         assert needle in text, needle
+
+
+def test_example_config_uses_every_module_and_validates(env):
+    import json
+    from conftest import ROOT
+    example = json.loads((ROOT / "skillwire.example.json").read_text())
+    assert set(config.MODULES) <= set(example)
+    assert all(example[m]["enabled"] is True for m in config.MODULES)
+    env.write_project(example)
+    cfg, problems = config.load(env.project)
+    assert problems == [] and config.validate(cfg) == []
