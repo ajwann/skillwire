@@ -26,14 +26,14 @@ The repo is both the plugin and a one-plugin marketplace.
 Inside Claude Code:
 
 ```
-/plugin marketplace add /path/to/skillwire        # or: owner/repo once it's on GitHub
+/plugin marketplace add ajwann/skillwire          # or a local checkout: /path/to/skillwire
 /plugin install skillwire@skillwire
 ```
 
 The same from a shell, optionally scoped to one project:
 
 ```bash
-claude plugin marketplace add /path/to/skillwire            # --scope project to keep it per-repo
+claude plugin marketplace add ajwann/skillwire              # --scope project to keep it per-repo
 claude plugin install skillwire@skillwire                   # -s project
 ```
 
