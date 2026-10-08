@@ -78,8 +78,9 @@ def check_config(rep: Report, project: Path) -> dict:
     from .modules import chaos
     if cfg["chaos"].get("enabled") and not chaos.active(cfg):
         rep.warn("chaos.enabled is true but SKILLWIRE_CHAOS!=1 in this shell, so chaos is inactive here")
-    if cfg["router"].get("llm_classify") and not os.environ.get("ANTHROPIC_API_KEY"):
-        rep.warn("router.llm_classify is on but ANTHROPIC_API_KEY is unset; regex only")
+    if cfg["router"].get("llm_classify"):
+        rep.warn("router.llm_classify is on: the classifier only runs inside hooks when the plugin's "
+                 "classifier_api_key option is set (/plugin → skillwire → configure); otherwise regex only")
     return cfg
 
 

@@ -1,16 +1,29 @@
 {
   "name": "skillwire",
   "displayName": "skillwire",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Intercept and reshape how Claude uses skills: routing, chaining, redirects, allow/deny lists, JIT-rendered skills, telemetry, description A/B tests and chaos mode.",
   "author": {
-    "name": "skillwire contributors"
+    "name": "Adam Wanninger",
+    "url": "https://github.com/ajwann"
   },
+  "homepage": "https://github.com/ajwann/skillwire",
+  "repository": "https://github.com/ajwann/skillwire",
   "license": "MIT",
   "keywords": [
     "skills",
     "hooks",
     "telemetry",
     "routing"
-  ]
+  ],
+  "icon": "./.claude-plugin/icon.png",
+  "userConfig": {
+    "classifier_api_key": {
+      "type": "string",
+      "title": "Anthropic API key for the router classifier (optional)",
+      "description": "Only used when router.llm_classify is true in skillwire.json. Sends the prompt and your router rule names to api.anthropic.com (Claude Haiku) to pick skills. Leave empty to use keyword/regex routing only.",
+      "sensitive": true,
+      "required": false
+    }
+  }
 }

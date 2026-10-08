@@ -77,7 +77,7 @@ def env(tmp_path, monkeypatch):
     project.mkdir()
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
-    for var in ("SKILLWIRE_HOME", "SKILLWIRE_CHAOS", "SKILLWIRE_CHAOS_SEED", "ANTHROPIC_API_KEY", "SKILLWIRE_DRY_RUN"):
+    for var in ("SKILLWIRE_HOME", "SKILLWIRE_CHAOS", "SKILLWIRE_CHAOS_SEED", "CLAUDE_PLUGIN_OPTION_CLASSIFIER_API_KEY", "SKILLWIRE_DRY_RUN"):
         monkeypatch.delenv(var, raising=False)
     return Env(home, project)
 

@@ -4,6 +4,22 @@ All notable changes to skillwire are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-10-08
+
+Changes for the Anthropic plugin directory checks.
+
+### Changed
+- The router's Haiku classifier now takes its API key from a new sensitive
+  `classifier_api_key` plugin option (secure storage, exported to hooks as
+  `CLAUDE_PLUGIN_OPTION_CLASSIFIER_API_KEY`). skillwire no longer reads API keys from
+  the shell environment. **If you used `llm_classify` with a key from your shell, set the
+  option instead.**
+- `plugin.json` now sets `author`, `homepage`, `repository` and `icon`.
+
+### Added
+- Listing icon at `.claude-plugin/icon.png`.
+- README section "What skillwire runs, sends and fetches".
+
 ## [0.1.0] - 2026-10-08
 
 First release.

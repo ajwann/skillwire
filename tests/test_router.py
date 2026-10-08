@@ -60,7 +60,7 @@ class FakeResp(io.BytesIO):
 
 def test_llm_classifier_adds_matches(env, monkeypatch):
     env.write_project({"router": {"rules": RULES, "llm_classify": True}})
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv(router.API_KEY_ENV, "test-key")
     seen = {}
 
     def fake_urlopen(req, timeout):
@@ -82,7 +82,7 @@ def test_llm_classifier_adds_matches(env, monkeypatch):
 @pytest.mark.parametrize("failure", ["timeout", "refusal", "garbage"])
 def test_llm_failure_falls_back_to_regex(env, monkeypatch, failure):
     env.write_project({"router": {"rules": RULES, "llm_classify": True}})
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv(router.API_KEY_ENV, "k")
 
     def fake_urlopen(req, timeout):
         if failure == "timeout":

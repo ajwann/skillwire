@@ -4,7 +4,9 @@ Rule shape: {skill, keywords[], regex[], intent_examples[], priority: required|s
 
 Keywords match case-insensitively on word boundaries, and regexes use
 re.search with IGNORECASE. When router.llm_classify is true and
-ANTHROPIC_API_KEY is set, a Haiku call adds matches. It has a hard timeout
+an API key is set in the plugin's
+`classifier_api_key` option (asked for at install, stored by Claude Code as a
+sensitive value, never read from your shell environment), a Haiku call adds matches. It has a hard timeout
 (router.llm_timeout, default 2s), and on any failure only the regex/keyword
 matches are used.
 """
@@ -18,6 +20,8 @@ import urllib.request
 from ..errors import log_error
 
 API_URL = "https://api.anthropic.com/v1/messages"
+# Claude Code exports the sensitive userConfig option `classifier_api_key` to hooks under this name.
+API_KEY_ENV = "CLAUDE_PLUGIN_OPTION_CLASSIFIER_API_KEY"
 
 
 def _keyword_hit(keyword: str, text: str) -> bool:
@@ -51,7 +55,7 @@ def match_rules(prompt: str, rules: list) -> list[dict]:
 
 def llm_classify(prompt: str, rules: list, model: str, timeout: float) -> list[str] | None:
     """Ask Haiku which rule skills apply. Returns None on any failure (caller falls back)."""
-    key = os.environ.get("ANTHROPIC_API_KEY")
+    key = os.environ.get(API_KEY_ENV)
     if not key or not rules:
         return None
     catalog = []
